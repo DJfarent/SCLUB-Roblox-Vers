@@ -1,9 +1,9 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))() --ui library will redo further
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
     Name = "secretservice.club",
-    LoadingTitle = "secretservice.club",
-    LoadingSubtitle = "Auto Chams + Tool Fixed",
+    LoadingTitle = "Secretservice.club",
+    LoadingSubtitle = "For Criminality 1.0!",
     ConfigurationSaving = { Enabled = false },
 })
 
@@ -16,88 +16,24 @@ local SoundService = game:GetService("SoundService")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
-local headshotSound = Instance.new("Sound")
-headshotSound.SoundId = "rbxassetid://4764109000"
-headshotSound.Volume = 0.9
-headshotSound.Parent = SoundService
-
-local damageNotif = Instance.new("Frame")
-damageNotif.Size = UDim2.new(0, 330, 0, 68)
-damageNotif.Position = UDim2.new(0.5, -165, 0.32, 0)
-damageNotif.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-damageNotif.Visible = false
-damageNotif.Parent = player:WaitForChild("PlayerGui")
-Instance.new("UICorner", damageNotif).CornerRadius = UDim.new(0, 12)
-Instance.new("UIStroke", damageNotif).Color = Color3.fromRGB(0, 255, 180)
-
-local damageLabel = Instance.new("TextLabel")
-damageLabel.Size = UDim2.new(1, -20, 1, 0)
-damageLabel.BackgroundTransparency = 1
-damageLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-damageLabel.Font = Enum.Font.GothamSemibold
-damageLabel.TextSize = 17
-damageLabel.TextXAlignment = Enum.TextXAlignment.Center
-damageLabel.Parent = damageNotif
-
-local dragging = false
-local dragStart, startPos
-damageNotif.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = damageNotif.Position
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        damageNotif.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-
-local lastDamageTime = 0
-local function showDamageNotification(targetName, damage, isHeadshot)
-    if tick() - lastDamageTime < 0.25 then return end
-    lastDamageTime = tick()
-
-    local text = string.format("Dealt %d damage to %s", damage, targetName)
-    if isHeadshot then
-        text = "HEADSHOT! " .. text
-        headshotSound:Play()
-    end
-
-    damageLabel.Text = text
-    damageNotif.Visible = true
-
-    task.delay(3, function()
-        if damageNotif.Visible then
-            TweenService:Create(damageNotif, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play()
-            TweenService:Create(damageLabel, TweenInfo.new(0.6), {TextTransparency = 1}):Play()
-            task.delay(0.7, function() damageNotif.Visible = false end)
-        end
-    end)
-end
-
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
-local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
-local PlayerTab = Window:CreateTab("Player", 4483362458)
-local MiscTab = Window:CreateTab("Misc", 4483362458)
+local rustHitSound = Instance.new("Sound")
+rustHitSound.SoundId = "rbxassetid://4764109000"  -- headshot
+rustHitSound.Volume = 0.85
+rustHitSound.Parent = SoundService
 
 local chamsEnabled = true
-local fillColor = Color3.fromRGB(0, 255, 200)
-local fillTrans = 0.5
-local outlineTrans = 0
-local highlights = {}
+local chamsColor = Color3.fromRGB(0, 255, 200)
+local chamsFillTrans = 0.5
+local chamsOutlineTrans = 0
 
-local aimFOV = 120
-local aimSmoothness = 0.94
-local aimPart = "Head"
-local aimKey = Enum.UserInputType.MouseButton2
+local customFOV = 70
 
 local hitNotificationsEnabled = false
+
+local isHoldingAim = false
+local aimFOV = 120
+local aimSmoothness = 0.93
+local aimPart = "Head"
 
 local fovCircle = Drawing.new("Circle")
 fovCircle.Thickness = 2
@@ -105,69 +41,80 @@ fovCircle.Filled = false
 fovCircle.Color = Color3.fromRGB(255, 255, 255)
 fovCircle.Transparency = 0.7
 
-local function updateChams()
+local playerHighlights = {}
+
+local function updatePlayerChams()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= player and plr.Character then
             if chamsEnabled then
-                if not highlights[plr.Character] then
+                if not playerHighlights[plr.Character] then
                     local hl = Instance.new("Highlight")
-                    hl.FillColor = fillColor
-                    hl.OutlineColor = fillColor
-                    hl.FillTransparency = fillTrans
-                    hl.OutlineTransparency = outlineTrans
+                    hl.FillColor = chamsColor
+                    hl.OutlineColor = chamsColor
+                    hl.FillTransparency = chamsFillTrans
+                    hl.OutlineTransparency = chamsOutlineTrans
                     hl.Adornee = plr.Character
                     hl.Parent = plr.Character
-                    highlights[plr.Character] = hl
+                    playerHighlights[plr.Character] = hl
                 else
-                    local hl = highlights[plr.Character]
-                    hl.FillColor = fillColor
-                    hl.OutlineColor = fillColor
-                    hl.FillTransparency = fillTrans
-                    hl.OutlineTransparency = outlineTrans
+                    local hl = playerHighlights[plr.Character]
+                    hl.FillColor = chamsColor
+                    hl.OutlineColor = chamsColor
+                    hl.FillTransparency = chamsFillTrans
+                    hl.OutlineTransparency = chamsOutlineTrans
                 end
             else
-                if highlights[plr.Character] then
-                    highlights[plr.Character]:Destroy()
-                    highlights[plr.Character] = nil
+                if playerHighlights[plr.Character] then
+                    playerHighlights[plr.Character]:Destroy()
+                    playerHighlights[plr.Character] = nil
                 end
             end
         end
     end
 end
 
-Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        updateChams()
-    end)
-end)
-
-player.CharacterAdded:Connect(function()
-    task.wait(1)
-    updateChams()
-end)
+local VisualsTab = Window:CreateTab("Visuals", 4483362458)
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
+local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 VisualsTab:CreateToggle({
-    Name = "Enable Chams",
+    Name = "Enable Player Chams",
     CurrentValue = true,
-    Callback = function(v)
-        chamsEnabled = v
-        updateChams()
-        Rayfield:Notify({Title = "Chams", Content = v and "Enabled" or "Disabled", Duration = 3})
-    end,
+    Callback = function(v) chamsEnabled = v end,
 })
 
 VisualsTab:CreateColorPicker({
     Name = "Chams Color",
     Color = Color3.fromRGB(0, 255, 200),
-    Callback = function(v)
-        fillColor = v
-        updateChams()
-    end,
+    Callback = function(v) chamsColor = v end,
 })
 
-VisualsTab:CreateSlider({Name = "Fill Transparency", Range = {0,1}, Increment = 0.05, CurrentValue = 0.5, Callback = function(v) fillTrans = v updateChams() end})
-VisualsTab:CreateSlider({Name = "Outline Transparency", Range = {0,1}, Increment = 0.05, CurrentValue = 0, Callback = function(v) outlineTrans = v updateChams() end})
+VisualsTab:CreateSlider({
+    Name = "Fill Transparency",
+    Range = {0, 1},
+    Increment = 0.05,
+    CurrentValue = 0.5,
+    Callback = function(v) chamsFillTrans = v end,
+})
+
+VisualsTab:CreateSlider({
+    Name = "Outline Transparency",
+    Range = {0, 1},
+    Increment = 0.05,
+    CurrentValue = 0,
+    Callback = function(v) chamsOutlineTrans = v end,
+})
+
+PlayerTab:CreateSlider({
+    Name = "Custom FOV",
+    Range = {20, 120},
+    Increment = 1,
+    CurrentValue = 70,
+    Callback = function(v)
+        customFOV = v
+    end,
+})
 
 AimbotTab:CreateKeybind({
     Name = "Aimbot Bind (Hold)",
@@ -185,53 +132,35 @@ AimbotTab:CreateDropdown({
     end,
 })
 
-AimbotTab:CreateSlider({Name = "FOV", Range = {30,300}, Increment = 1, CurrentValue = 120, Callback = function(v) aimFOV = v end})
-AimbotTab:CreateSlider({Name = "Smoothness (Stiffness)", Range = {0.8,1}, Increment = 0.01, CurrentValue = 0.94, Callback = function(v) aimSmoothness = v end})
+AimbotTab:CreateSlider({
+    Name = "FOV",
+    Range = {30, 300},
+    Increment = 1,
+    CurrentValue = 120,
+    Callback = function(v) aimFOV = v end,
+})
 
-PlayerTab:CreateSlider({Name = "Field of View", Range = {20,120}, Increment = 1, CurrentValue = 70, Callback = function(v) camera.FieldOfView = v end})
+AimbotTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {0.8, 1},
+    Increment = 0.01,
+    CurrentValue = 0.93,
+    Callback = function(v) aimSmoothness = v end,
+})
 
 MiscTab:CreateToggle({
     Name = "Hit Notifications",
     CurrentValue = false,
-    Callback = function(v)
-        hitNotificationsEnabled = v
-        Rayfield:Notify({Title = "Hit Notifications", Content = v and "Enabled" or "Disabled", Duration = 4})
-    end,
+    Callback = function(v) hitNotificationsEnabled = v end,
 })
 
-local lastHealthTable = {}
 RunService.Heartbeat:Connect(function()
-    if not hitNotificationsEnabled then return end
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character then
-            local hum = plr.Character:FindFirstChild("Humanoid")
-            if hum then
-                local current = hum.Health
-                local prev = lastHealthTable[hum] or current
-                if current < prev - 0.1 then
-                    local damage = math.floor(prev - current)
-                    if damage > 0 then
-                        showDamageNotification(plr.Name, damage, damage >= 25)
-                    end
-                end
-                lastHealthTable[hum] = current
-            end
-        end
-    end
+    updatePlayerChams()
 end)
 
-local isHoldingAim = false
-
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.UserInputType == aimKey or input.KeyCode == aimKey then
-        isHoldingAim = true
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == aimKey or input.KeyCode == aimKey then
-        isHoldingAim = false
+RunService.RenderStepped:Connect(function()
+    if camera.FieldOfView ~= customFOV then
+        camera.FieldOfView = customFOV
     end
 end)
 
@@ -264,12 +193,56 @@ RunService:BindToRenderStep("Aimbot", Enum.RenderPriority.Camera.Value + 1, func
     end
 end)
 
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        isHoldingAim = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        isHoldingAim = false
+    end
+end)
+
+local lastHealthTable = {}
+RunService.Heartbeat:Connect(function()
+    if not hitNotificationsEnabled then return end
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player and plr.Character then
+            local hum = plr.Character:FindFirstChild("Humanoid")
+            if hum then
+                local current = hum.Health
+                local prev = lastHealthTable[hum] or current
+
+                if current < prev - 0.1 then
+                    local damage = math.floor(prev - current)
+                    if damage > 0 then
+                        local tool = player.Character and player.Character:FindFirstChildWhichIsA("Tool")
+                        if tool then
+                            local msg = string.format("Dealt %d damage to %s", damage, plr.Name)
+                            headshotSound:Play()
+
+                            Rayfield:Notify({
+                                Title = "Damage",
+                                Content = msg,
+                                Duration = 3,
+                            })
+                        end
+                    end
+                end
+                lastHealthTable[hum] = current
+            end
+        end
+    end
+end)
+
 Rayfield:Notify({
-    Title = "Secretservice.club",
-    Content = "Enjoy Beating the Competition!",
-    Duration = 7,
+    Title = "secretservice.club",
+    Content = "1.0 Release!",
+    Duration = 5,
 })
 
-print("secretservice.club loaded")
-
---created with the help of Roblox Wiki and stack 
+--add world esp and more player tab stuff ok
