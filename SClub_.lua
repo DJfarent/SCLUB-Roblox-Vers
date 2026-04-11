@@ -42,13 +42,6 @@ fovCircle.Color = Color3.fromRGB(255, 255, 255)
 fovCircle.Transparency = 0.7
 
 local playerHighlights = {}
-local worldHighlights = {}
-
-local dealerESP = true
-local registerESP = true
-local smallSafeESP = true
-local mediumSafeESP = true
-local supplyCrateESP = true
 
 local function updatePlayerChams()
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -80,50 +73,9 @@ local function updatePlayerChams()
     end
 end
 
-local function createWorldHighlight(obj, color)
-    if worldHighlights[obj] then return end
-    local hl = Instance.new("Highlight")
-    hl.FillColor = color
-    hl.OutlineColor = color
-    hl.FillTransparency = 0.4
-    hl.OutlineTransparency = 0
-    hl.Adornee = obj
-    hl.Parent = obj
-    worldHighlights[obj] = hl
-end
-
-local function updateWorldESP()
-    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
-    local myPos = myRoot.Position
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if not (obj:IsA("Model") or obj:IsA("Part")) then continue end
-        local name = obj.Name
-        local objPos = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-        if not objPos then continue end
-        objPos = objPos.Position
-
-        if (myPos - objPos.Position).Magnitude > 5000 then continue end
-
-        if dealerESP and (name == "DealerMan" or name == "ArmoryDealer") then
-            createWorldHighlight(obj, Color3.fromRGB(255, 80, 80))
-        elseif registerESP and name:find("Register") then
-            createWorldHighlight(obj, Color3.fromRGB(255, 255, 100))
-        elseif smallSafeESP and name:find("SmallSafe") then
-            createWorldHighlight(obj, Color3.fromRGB(100, 255, 100))
-        elseif mediumSafeESP and name:find("MediumSafe") then
-            createWorldHighlight(obj, Color3.fromRGB(100, 200, 255))
-        elseif supplyCrateESP and name == "SupplyCrate" then
-            createWorldHighlight(obj, Color3.fromRGB(255, 150, 255))
-        end
-    end
-end
-
 local VisualsTab = Window:CreateTab("Visuals", 4483362458)
 local PlayerTab = Window:CreateTab("Player", 4483362458)
 local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
-local WorldTab = Window:CreateTab("World ESP", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 VisualsTab:CreateToggle({
@@ -200,12 +152,6 @@ AimbotTab:CreateToggle({
     Callback = function(v) predictionEnabled = v end,
 })
 
-WorldTab:CreateToggle({ Name = "Dealer ESP", CurrentValue = true, Callback = function(v) dealerESP = v end })
-WorldTab:CreateToggle({ Name = "Register ESP", CurrentValue = true, Callback = function(v) registerESP = v end })
-WorldTab:CreateToggle({ Name = "Small Safe ESP", CurrentValue = true, Callback = function(v) smallSafeESP = v end })
-WorldTab:CreateToggle({ Name = "Medium Safe ESP", CurrentValue = true, Callback = function(v) mediumSafeESP = v end })
-WorldTab:CreateToggle({ Name = "Supply Crate ESP", CurrentValue = true, Callback = function(v) supplyCrateESP = v end })
-
 MiscTab:CreateToggle({
     Name = "Hit Notifications",
     CurrentValue = false,
@@ -214,7 +160,6 @@ MiscTab:CreateToggle({
 
 RunService.Heartbeat:Connect(function()
     updatePlayerChams()
-    updateWorldESP()
 end)
 
 RunService.RenderStepped:Connect(function()
@@ -235,10 +180,12 @@ RunService:BindToRenderStep("Aimbot", Enum.RenderPriority.Camera.Value + 1, func
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= player and plr.Character and plr.Character:FindFirstChild(aimPart) then
                 local targetPos = plr.Character[aimPart].Position
+                
                 if predictionEnabled then
                     local vel = plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character.HumanoidRootPart.Velocity or Vector3.new()
-                    targetPos = targetPos + vel * 0.12
+                    targetPos = targetPos + vel * 0.065 
                 end
+                
                 local pos, onScreen = camera:WorldToViewportPoint(targetPos)
                 if onScreen then
                     local d = (mousePos - Vector2.new(pos.X, pos.Y)).Magnitude
@@ -253,10 +200,12 @@ RunService:BindToRenderStep("Aimbot", Enum.RenderPriority.Camera.Value + 1, func
         if closest and closest:FindFirstChild(aimPart) then
             local cf = camera.CFrame
             local targetPos = closest[aimPart].Position
+            
             if predictionEnabled then
                 local vel = closest:FindFirstChild("HumanoidRootPart") and closest.HumanoidRootPart.Velocity or Vector3.new()
-                targetPos = targetPos + vel * 0.12
+                targetPos = targetPos + vel * 0.065
             end
+            
             camera.CFrame = cf:Lerp(CFrame.lookAt(cf.Position, targetPos), aimSmoothness)
         end
     end
@@ -275,9 +224,11 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
+-- show notif when you only deal dmg
 local lastHealthTable = {}
 RunService.Heartbeat:Connect(function()
     if not hitNotificationsEnabled then return end
+
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= player and plr.Character then
             local hum = plr.Character:FindFirstChild("Humanoid")
@@ -310,5 +261,3 @@ Rayfield:Notify({
     Content = "Loaded successfully!",
     Duration = 5,
 })
-
---add world esp and more player tab stuff ok
