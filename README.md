@@ -13,9 +13,12 @@ A clean and stable Roblox script for Criminality using Rayfield UI.
 - **Player** → Custom FOV (persistent)
 - **Aimbot** → Bind, Aim Part, FOV, Smoothness
 - **Misc** → Hit Notifications toggle
+- **World esp** → Renders Safes,Registers,etc (Laggy)
+- **Rage** → Enables Spinbot and Jitter
 
 ### Future updates
-- World Esp
+- More rage
+- Fix world Esp
 
 ---
 
